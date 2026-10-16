@@ -1,0 +1,902 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>圖中圖</title>
+<style>
+  /* Layout: single-column workbench, two modes toggled by tabs; a "darkroom" palette — deep ink ground, amber safelight accent */
+  :root {
+    --bg: #f4f2ec;
+    --panel: #ffffff;
+    --ink: #1c1a16;
+    --muted: #6b6457;
+    --line: #ddd8cc;
+    --accent: #b5641e;
+    --accent-soft: #f3e3d2;
+    --good: #3f7d4f;
+    --bad: #b23b3b;
+    --shadow: 0 1px 2px rgba(28,26,22,.06), 0 8px 24px rgba(28,26,22,.06);
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --display: "Fraunces", Georgia, serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17150f;
+      --panel: #211e17;
+      --ink: #efe9dc;
+      --muted: #a39a86;
+      --line: #35312768;
+      --accent: #e39a4e;
+      --accent-soft: #3a2e1d;
+      --good: #6cc081;
+      --bad: #e07a7a;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17150f;
+    --panel: #211e17;
+    --ink: #efe9dc;
+    --muted: #a39a86;
+    --line: #353127;
+    --accent: #e39a4e;
+    --accent-soft: #3a2e1d;
+    --good: #6cc081;
+    --bad: #e07a7a;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.55;
+    margin: 0;
+  }
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 28px 56px;
+  }
+
+  header.masthead { margin-bottom: 22px; }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 6px;
+  }
+  h1 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(30px, 8vw, 44px);
+    line-height: 1.02;
+    letter-spacing: -.01em;
+    margin: 0 0 8px;
+    text-wrap: balance;
+  }
+  .lede {
+    color: var(--muted);
+    font-size: 15px;
+    margin: 0;
+    max-width: 58ch;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 4px;
+    margin: 24px 0 18px;
+    box-shadow: var(--shadow);
+  }
+  .tab {
+    flex: 1;
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 8px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .tab[aria-selected="true"] {
+    background: var(--accent);
+    color: #fff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .tab[aria-selected="true"] { color: #17150f; }
+  }
+  :root[data-theme="dark"] .tab[aria-selected="true"] { color: #17150f; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+  .panel + .panel { margin-top: 16px; }
+
+  h2.sec {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  h2.sec .n {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    width: 20px; height: 20px;
+    display: inline-grid; place-items: center;
+    border-radius: 6px;
+    flex: none;
+  }
+
+  /* Dropzone */
+  .drop {
+    border: 1.5px dashed var(--line);
+    border-radius: 12px;
+    padding: 22px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .drop strong { color: var(--ink); }
+  .drop .big { font-size: 15px; margin-bottom: 2px; color: var(--ink); font-weight: 600; }
+
+  input[type=file] { display: none; }
+
+  /* thumbnail grid */
+  .thumbs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .thumbs:empty { display: none; }
+  .thumb {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 9px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: var(--bg);
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb .x {
+    position: absolute; top: 4px; right: 4px;
+    width: 22px; height: 22px;
+    border: 0; border-radius: 50%;
+    background: rgba(0,0,0,.6); color: #fff;
+    font-size: 14px; line-height: 1; cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .thumb .label {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    font-family: var(--mono); font-size: 9px;
+    background: rgba(0,0,0,.55); color: #fff;
+    padding: 2px 4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .thumb.cover::after {
+    content: "封面";
+    position: absolute; top: 4px; left: 4px;
+    font-family: var(--mono); font-size: 9px;
+    background: var(--accent); color: #fff;
+    padding: 1px 5px; border-radius: 5px;
+  }
+
+  label.field { display: block; margin-top: 14px; }
+  label.field > span {
+    display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px;
+  }
+  input[type=text], input[type=password] {
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  input[type=text]:focus, input[type=password]:focus {
+    outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent);
+  }
+
+  .btn {
+    appearance: none; border: 0; cursor: pointer;
+    font-family: var(--sans); font-size: 15px; font-weight: 600;
+    padding: 12px 18px; border-radius: 10px;
+    background: var(--accent); color: #fff;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: filter .15s, transform .05s;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .btn:not(.ghost) { color: #17150f; }
+  }
+  :root[data-theme="dark"] .btn:not(.ghost) { color: #17150f; }
+  .btn:hover { filter: brightness(1.05); }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+  .btn.ghost:hover { background: var(--accent-soft); }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; align-items: center; }
+
+  .note {
+    font-size: 13px; color: var(--muted);
+    margin: 10px 0 0; display: flex; gap: 8px; align-items: flex-start;
+  }
+  .note::before { content: "›"; color: var(--accent); font-weight: 700; }
+
+  .status { font-size: 14px; margin-top: 14px; min-height: 1.2em; }
+  .status.good { color: var(--good); }
+  .status.bad { color: var(--bad); }
+
+  .result-img {
+    margin-top: 16px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    overflow: hidden;
+  }
+  .result-img img { width: 100%; display: block; }
+
+  .meta {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px 16px;
+  }
+  .meta b { color: var(--ink); font-weight: 600; }
+
+  .extracted {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px; margin-top: 16px;
+  }
+  .ex-card {
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    background: var(--bg); display: flex; flex-direction: column;
+  }
+  .ex-card img { width: 100%; display: block; background:
+      repeating-conic-gradient(var(--line) 0% 25%, transparent 0% 50%) 50% / 16px 16px; }
+  .ex-card .foot { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .ex-card .fn { font-family: var(--mono); font-size: 11px; color: var(--muted); word-break: break-all; }
+
+  details.how {
+    margin-top: 22px; border: 1px solid var(--line); border-radius: 12px;
+    background: var(--panel); padding: 2px 16px;
+  }
+  details.how summary {
+    cursor: pointer; font-weight: 600; font-size: 14px; padding: 12px 0;
+    list-style: none;
+  }
+  details.how summary::-webkit-details-marker { display: none; }
+  details.how summary::before { content: "＋ "; color: var(--accent); font-family: var(--mono); }
+  details.how[open] summary::before { content: "－ "; }
+  details.how .body { font-size: 13.5px; color: var(--muted); padding-bottom: 14px; line-height: 1.6; }
+  details.how .body code { font-family: var(--mono); font-size: 12px; background: var(--bg); padding: 1px 5px; border-radius: 4px; color: var(--ink); }
+  details.how .body ol { padding-left: 20px; margin: 8px 0; }
+  details.how .body li { margin: 4px 0; }
+
+  .theme-toggle {
+    position: fixed;
+    top: env(safe-area-inset-top, 0px);
+    right: max(14px, env(safe-area-inset-right, 0px));
+    margin-top: 12px;
+    z-index: 20;
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+    cursor: pointer; font-size: 15px; box-shadow: var(--shadow);
+  }
+  [hidden] { display: none !important; }
+
+  a.link { color: var(--accent); }
+</style>
+
+<button class="theme-toggle" id="themeBtn" title="切換深淺色" aria-label="切換深淺色">◐</button>
+
+<div class="wrap">
+  <header class="masthead">
+    <p class="eyebrow">離線工具 · 不上傳任何圖片</p>
+    <h1>圖中圖</h1>
+    <p class="lede">把多張圖片打包藏進一張封面圖裡。一般看圖器只會顯示封面;用這個工具打開同一個檔案,就能取回全部藏起來的圖。全程在你的瀏覽器裡完成,圖片不會送到任何伺服器。</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tab-hide" role="tab" aria-selected="true" aria-controls="panel-hide">藏入圖片</button>
+    <button class="tab" id="tab-reveal" role="tab" aria-selected="false" aria-controls="panel-reveal">取出圖片</button>
+  </div>
+
+  <!-- HIDE -->
+  <section id="panel-hide" role="tabpanel" aria-labelledby="tab-hide">
+    <div class="panel">
+      <h2 class="sec"><span class="n">1</span>選一張封面圖</h2>
+      <div class="drop" id="coverDrop">
+        <div class="big">點這裡選封面圖</div>
+        <div>這是別人一眼會看到的那張（PNG / JPG 皆可）</div>
+      </div>
+      <input type="file" id="coverInput" accept="image/*">
+      <div class="thumbs" id="coverThumb"></div>
+    </div>
+
+    <div class="panel">
+      <h2 class="sec"><span class="n">2</span>選要藏起來的圖片</h2>
+      <div class="drop" id="hiddenDrop">
+        <div class="big">點這裡選要藏的圖片</div>
+        <div>可以一次選很多張，任何格式都行</div>
+      </div>
+      <input type="file" id="hiddenInput" accept="image/*" multiple>
+      <div class="thumbs" id="hiddenThumbs"></div>
+    </div>
+
+    <div class="panel">
+      <h2 class="sec"><span class="n">3</span>選項與輸出</h2>
+      <label class="field">
+        <span>密碼（選填）— 設了之後，取出時要輸入同一組密碼</span>
+        <input type="password" id="pwHide" placeholder="留空就不加密" autocomplete="new-password">
+      </label>
+      <div class="actions">
+        <button class="btn" id="packBtn" disabled>打包成一張圖 ↓</button>
+      </div>
+      <p class="status" id="hideStatus"></p>
+      <p class="note">檔案會變大（藏起來的圖是「附加」在封面後面，不是真的壓縮覆蓋）。但在相簿、瀏覽器、Line、一般看圖器裡，它就是一張正常的封面圖。</p>
+
+      <div id="hideResult" hidden>
+        <div class="result-img"><img id="hidePreview" alt="輸出的封面圖預覽"></div>
+        <div class="meta" id="hideMeta"></div>
+        <div class="actions">
+          <button class="btn" id="dlBtn">下載這張圖</button>
+          <button class="btn ghost" id="toRevealBtn">拿去「取出」測試看看</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REVEAL -->
+  <section id="panel-reveal" role="tabpanel" aria-labelledby="tab-reveal" hidden>
+    <div class="panel">
+      <h2 class="sec"><span class="n">1</span>丟進一張用本工具做的圖</h2>
+      <div class="drop" id="revealDrop">
+        <div class="big">點這裡選圖，或把圖拖進來</div>
+        <div>只有用「圖中圖」藏過的圖才有東西可以取出</div>
+      </div>
+      <input type="file" id="revealInput" accept="image/*">
+    </div>
+
+    <div class="panel" id="revealOpts" hidden>
+      <label class="field">
+        <span>密碼（如果藏入時有設）</span>
+        <input type="password" id="pwReveal" placeholder="輸入密碼" autocomplete="off">
+      </label>
+      <div class="actions">
+        <button class="btn" id="revealBtn">取出藏起來的圖片</button>
+      </div>
+      <p class="status" id="revealStatus"></p>
+    </div>
+
+    <div id="revealResult"></div>
+  </section>
+
+  <details class="how">
+    <summary>它是怎麼做到的？安全嗎？</summary>
+    <div class="body">
+      <p>這用的是「附加資料」式的隱寫：把你要藏的每張圖片打包成一段資料，接在封面圖檔案的<strong>結尾</strong>，前面放一個識別標記。</p>
+      <ol>
+        <li>PNG / JPG 的看圖器讀到影像結束標記就停止解碼，<strong>後面多出來的 bytes 會被完全忽略</strong>——所以一般打開就是張正常封面圖。</li>
+        <li>本工具打開同一個檔案時，會從尾端往回找那個識別標記，把藏起來的資料讀回來、解包還原。</li>
+      </ol>
+      <p><strong>關於安全性：</strong>這能騙過「隨手看一眼」，但<strong>不是強加密</strong>。懂技術的人用十六進位編輯器就能看出檔案尾端有東西。設密碼會把藏入資料用 AES-GCM 加密（瀏覽器內建的 <code>Web Crypto</code>），這樣就算被發現尾端有資料，沒有密碼也還原不出圖片。真正機密的東西，請搭配密碼使用。</p>
+      <p><strong>注意：</strong>如果把做好的圖上傳到會「重新壓縮」圖片的平台（例如某些社群把圖轉成 WebP、或強制重壓 JPG），尾端附加的資料可能會被平台丟掉。想保險，用原檔傳輸（例如當「檔案」而非「照片」傳、或存成 PNG）。</p>
+      <p>整頁沒有任何網路請求，你可以斷網使用，也可以把這個頁面存成 .html 檔離線保存。</p>
+    </div>
+  </details>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- download bridge (artifact viewer vs standalone) ----------
+  var _dl = undefined; // undefined=unresolved, null=unavailable, obj=namespace
+  async function getDownloads() {
+    if (_dl !== undefined) return _dl;
+    _dl = null;
+    try {
+      if (window.claude && typeof window.claude.use === "function") {
+        _dl = await window.claude.use("downloads");
+      }
+    } catch (e) { _dl = null; }
+    return _dl;
+  }
+  // Saves a Blob; returns a short status string for the UI.
+  async function saveFile(blob, filename) {
+    var dl = await getDownloads();
+    if (dl) {
+      try {
+        await dl.save({ filename: filename, data: blob });
+        return "saved";
+      } catch (e) {
+        if (e && e.code === "declined") return "declined";
+        // fall through to anchor attempt for any other code
+      }
+    }
+    // Standalone (page opened as a local .html file, not inside the viewer)
+    try {
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+      return "saved";
+    } catch (e2) { return "error"; }
+  }
+
+  // ---------- theme toggle ----------
+  var themeBtn = document.getElementById("themeBtn");
+  function currentTheme() {
+    var set = document.documentElement.getAttribute("data-theme");
+    if (set) return set;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  themeBtn.addEventListener("click", function () {
+    var next = currentTheme() === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+  });
+
+  // ---------- tabs ----------
+  var tabHide = document.getElementById("tab-hide");
+  var tabReveal = document.getElementById("tab-reveal");
+  var panelHide = document.getElementById("panel-hide");
+  var panelReveal = document.getElementById("panel-reveal");
+  function selectTab(which) {
+    var hide = which === "hide";
+    tabHide.setAttribute("aria-selected", hide ? "true" : "false");
+    tabReveal.setAttribute("aria-selected", hide ? "false" : "true");
+    panelHide.hidden = !hide;
+    panelReveal.hidden = hide;
+  }
+  tabHide.addEventListener("click", function () { selectTab("hide"); });
+  tabReveal.addEventListener("click", function () { selectTab("reveal"); });
+
+  // ---------- helpers ----------
+  var MAGIC = "STEGPACKv1"; // marker string
+  var enc = new TextEncoder();
+  var dec = new TextDecoder();
+
+  function readFileAsArrayBuffer(file) {
+    return new Promise(function (res, rej) {
+      var r = new FileReader();
+      r.onload = function () { res(r.result); };
+      r.onerror = function () { rej(r.error); };
+      r.readAsArrayBuffer(file);
+    });
+  }
+  function u8(buf) { return new Uint8Array(buf); }
+
+  function concat(arrays) {
+    var total = 0, i;
+    for (i = 0; i < arrays.length; i++) total += arrays[i].length;
+    var out = new Uint8Array(total), off = 0;
+    for (i = 0; i < arrays.length; i++) { out.set(arrays[i], off); off += arrays[i].length; }
+    return out;
+  }
+
+  // write a 4-byte big-endian length then the bytes
+  function lenPrefixed(bytes) {
+    var len = bytes.length;
+    var head = new Uint8Array(4);
+    head[0] = (len >>> 24) & 255;
+    head[1] = (len >>> 16) & 255;
+    head[2] = (len >>> 8) & 255;
+    head[3] = len & 255;
+    return concat([head, bytes]);
+  }
+  function readLen(bytes, pos) {
+    return (bytes[pos] << 24) | (bytes[pos + 1] << 16) | (bytes[pos + 2] << 8) | bytes[pos + 3];
+  }
+
+  // Build payload: MAGIC | flag(1) | [salt+iv if encrypted] | count(4) | for each: nameLen+name + dataLen+data
+  // returns Uint8Array of the inner packed payload (before optional encryption)
+  function packImages(items) {
+    var parts = [];
+    var count = new Uint8Array(4);
+    count[0] = (items.length >>> 24) & 255;
+    count[1] = (items.length >>> 16) & 255;
+    count[2] = (items.length >>> 8) & 255;
+    count[3] = items.length & 255;
+    parts.push(count);
+    for (var i = 0; i < items.length; i++) {
+      var nameBytes = enc.encode(items[i].name);
+      parts.push(lenPrefixed(nameBytes));
+      parts.push(lenPrefixed(items[i].bytes));
+    }
+    return concat(parts);
+  }
+
+  function unpackImages(bytes) {
+    var pos = 0;
+    var count = readLen(bytes, pos); pos += 4;
+    var out = [];
+    for (var i = 0; i < count; i++) {
+      var nLen = readLen(bytes, pos); pos += 4;
+      var name = dec.decode(bytes.subarray(pos, pos + nLen)); pos += nLen;
+      var dLen = readLen(bytes, pos); pos += 4;
+      var data = bytes.subarray(pos, pos + dLen); pos += dLen;
+      out.push({ name: name, bytes: data });
+    }
+    return out;
+  }
+
+  // ---------- crypto ----------
+  async function deriveKey(password, salt) {
+    var baseKey = await crypto.subtle.importKey(
+      "raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]
+    );
+    return crypto.subtle.deriveKey(
+      { name: "PBKDF2", salt: salt, iterations: 150000, hash: "SHA-256" },
+      baseKey,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt", "decrypt"]
+    );
+  }
+  async function encryptPayload(payload, password) {
+    var salt = crypto.getRandomValues(new Uint8Array(16));
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    var key = await deriveKey(password, salt);
+    var ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, payload));
+    return concat([salt, iv, ct]); // 16 + 12 + ...
+  }
+  async function decryptPayload(blob, password) {
+    var salt = blob.subarray(0, 16);
+    var iv = blob.subarray(16, 28);
+    var ct = blob.subarray(28);
+    var key = await deriveKey(password, salt);
+    var pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, ct);
+    return new Uint8Array(pt);
+  }
+
+  // ---------- state: HIDE ----------
+  var coverFile = null;       // {bytes, name, type, url}
+  var hiddenFiles = [];       // [{bytes, name, url}]
+  var outputBlob = null;
+  var outputName = "cover.png";
+
+  var coverDrop = document.getElementById("coverDrop");
+  var coverInput = document.getElementById("coverInput");
+  var coverThumb = document.getElementById("coverThumb");
+  var hiddenDrop = document.getElementById("hiddenDrop");
+  var hiddenInput = document.getElementById("hiddenInput");
+  var hiddenThumbs = document.getElementById("hiddenThumbs");
+  var packBtn = document.getElementById("packBtn");
+  var hideStatus = document.getElementById("hideStatus");
+  var hideResult = document.getElementById("hideResult");
+  var hidePreview = document.getElementById("hidePreview");
+  var hideMeta = document.getElementById("hideMeta");
+  var dlBtn = document.getElementById("dlBtn");
+  var toRevealBtn = document.getElementById("toRevealBtn");
+  var pwHide = document.getElementById("pwHide");
+
+  function bindDrop(dropEl, inputEl, onFiles) {
+    dropEl.addEventListener("click", function () { inputEl.click(); });
+    dropEl.addEventListener("dragover", function (e) { e.preventDefault(); dropEl.classList.add("over"); });
+    dropEl.addEventListener("dragleave", function () { dropEl.classList.remove("over"); });
+    dropEl.addEventListener("drop", function (e) {
+      e.preventDefault(); dropEl.classList.remove("over");
+      if (e.dataTransfer.files && e.dataTransfer.files.length) onFiles(e.dataTransfer.files);
+    });
+    inputEl.addEventListener("change", function () {
+      if (inputEl.files && inputEl.files.length) onFiles(inputEl.files);
+      inputEl.value = "";
+    });
+  }
+
+  function fmtBytes(n) {
+    if (n < 1024) return n + " B";
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
+    return (n / 1024 / 1024).toFixed(2) + " MB";
+  }
+
+  async function onCover(files) {
+    var f = files[0];
+    var buf = await readFileAsArrayBuffer(f);
+    if (coverFile && coverFile.url) URL.revokeObjectURL(coverFile.url);
+    var bytes = u8(buf);
+    coverFile = {
+      bytes: bytes, name: f.name, type: f.type || "image/png",
+      url: URL.createObjectURL(new Blob([bytes], { type: f.type || "image/png" }))
+    };
+    renderCover();
+    refreshPackBtn();
+  }
+  function renderCover() {
+    coverThumb.innerHTML = "";
+    if (!coverFile) return;
+    var d = document.createElement("div");
+    d.className = "thumb cover";
+    d.innerHTML = '<img src="' + coverFile.url + '" alt=""><span class="label">' +
+      escapeHtml(coverFile.name) + "</span>";
+    coverThumb.appendChild(d);
+  }
+
+  async function onHidden(files) {
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      var buf = await readFileAsArrayBuffer(f);
+      var bytes = u8(buf);
+      hiddenFiles.push({
+        bytes: bytes, name: f.name,
+        url: URL.createObjectURL(new Blob([bytes], { type: f.type || "image/png" }))
+      });
+    }
+    renderHidden();
+    refreshPackBtn();
+  }
+  function renderHidden() {
+    hiddenThumbs.innerHTML = "";
+    hiddenFiles.forEach(function (h, idx) {
+      var d = document.createElement("div");
+      d.className = "thumb";
+      d.innerHTML = '<img src="' + h.url + '" alt=""><button class="x" data-i="' + idx +
+        '" aria-label="移除">×</button><span class="label">' + escapeHtml(h.name) + "</span>";
+      hiddenThumbs.appendChild(d);
+    });
+    Array.prototype.forEach.call(hiddenThumbs.querySelectorAll(".x"), function (b) {
+      b.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var i = parseInt(b.getAttribute("data-i"), 10);
+        if (hiddenFiles[i].url) URL.revokeObjectURL(hiddenFiles[i].url);
+        hiddenFiles.splice(i, 1);
+        renderHidden(); refreshPackBtn();
+      });
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function refreshPackBtn() {
+    packBtn.disabled = !(coverFile && hiddenFiles.length > 0);
+  }
+
+  bindDrop(coverDrop, coverInput, onCover);
+  bindDrop(hiddenDrop, hiddenInput, onHidden);
+
+  packBtn.addEventListener("click", async function () {
+    if (!coverFile || !hiddenFiles.length) return;
+    packBtn.disabled = true;
+    hideStatus.className = "status";
+    hideStatus.textContent = "打包中…";
+    try {
+      var payload = packImages(hiddenFiles); // inner packed
+      var pw = pwHide.value;
+      var flag = 0; // bit0 = encrypted
+      var body;
+      if (pw) {
+        body = await encryptPayload(payload, pw);
+        flag = 1;
+      } else {
+        body = payload;
+      }
+      // trailer: MAGIC | flag(1) | len(4) | body
+      var magicBytes = enc.encode(MAGIC);
+      var flagByte = new Uint8Array([flag]);
+      var trailer = concat([magicBytes, flagByte, lenPrefixed(body)]);
+      var finalBytes = concat([coverFile.bytes, trailer]);
+
+      var outType = coverFile.type && coverFile.type.indexOf("image/") === 0 ? coverFile.type : "image/png";
+      outputBlob = new Blob([finalBytes], { type: outType });
+      // name: keep cover extension
+      var base = coverFile.name.replace(/\.[^.]+$/, "");
+      var ext = (coverFile.name.match(/\.[^.]+$/) || [".png"])[0];
+      outputName = base + "_packed" + ext;
+
+      if (hidePreview.src && hidePreview.src.indexOf("blob:") === 0) URL.revokeObjectURL(hidePreview.src);
+      hidePreview.src = URL.createObjectURL(outputBlob);
+      hideMeta.innerHTML =
+        "<span>藏入張數：<b>" + hiddenFiles.length + "</b></span>" +
+        "<span>封面：<b>" + fmtBytes(coverFile.bytes.length) + "</b></span>" +
+        "<span>輸出大小：<b>" + fmtBytes(finalBytes.length) + "</b></span>" +
+        "<span>加密：<b>" + (pw ? "是（AES-GCM）" : "否") + "</b></span>";
+      hideResult.hidden = false;
+      hideStatus.className = "status good";
+      hideStatus.textContent = "完成！下面可以下載，或直接拿去「取出」驗證。";
+    } catch (err) {
+      hideStatus.className = "status bad";
+      hideStatus.textContent = "打包失敗：" + (err && err.message ? err.message : err);
+    }
+    packBtn.disabled = false;
+  });
+
+  dlBtn.addEventListener("click", async function () {
+    if (!outputBlob) return;
+    dlBtn.disabled = true;
+    var r = await saveFile(outputBlob, outputName);
+    dlBtn.disabled = false;
+    if (r === "declined") {
+      hideStatus.className = "status";
+      hideStatus.textContent = "下載取消了。隨時可以再按一次。";
+    } else if (r === "error") {
+      hideStatus.className = "status bad";
+      hideStatus.textContent = "這個環境擋住了存檔。可把本頁存成 .html 離線開啟後再下載。";
+    }
+  });
+
+  // ---------- state: REVEAL ----------
+  var revealDrop = document.getElementById("revealDrop");
+  var revealInput = document.getElementById("revealInput");
+  var revealOpts = document.getElementById("revealOpts");
+  var revealBtn = document.getElementById("revealBtn");
+  var revealStatus = document.getElementById("revealStatus");
+  var revealResult = document.getElementById("revealResult");
+  var pwReveal = document.getElementById("pwReveal");
+
+  var revealBytes = null;     // Uint8Array of loaded file
+  var parsedTrailer = null;   // {flag, body}
+
+  bindDrop(revealDrop, revealInput, function (files) {
+    readFileAsArrayBuffer(files[0]).then(function (buf) {
+      loadRevealBytes(u8(buf));
+    });
+  });
+
+  // override toReveal to re-read the output blob properly
+  toRevealBtn.addEventListener("click", function () {
+    if (!outputBlob) return;
+    readFileAsArrayBuffer(outputBlob).then(function (buf) {
+      selectTab("reveal");
+      loadRevealBytes(u8(buf));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  });
+
+  function findTrailer(bytes) {
+    // search for MAGIC from the end
+    var magicBytes = enc.encode(MAGIC);
+    var m = magicBytes.length;
+    for (var i = bytes.length - (m + 1 + 4); i >= 0; i--) {
+      var ok = true;
+      for (var j = 0; j < m; j++) {
+        if (bytes[i + j] !== magicBytes[j]) { ok = false; break; }
+      }
+      if (ok) {
+        var pos = i + m;
+        var flag = bytes[pos]; pos += 1;
+        var len = readLen(bytes, pos); pos += 4;
+        if (pos + len > bytes.length) continue;
+        var body = bytes.subarray(pos, pos + len);
+        return { flag: flag, body: body };
+      }
+    }
+    return null;
+  }
+
+  function loadRevealBytes(bytes) {
+    revealBytes = bytes;
+    revealResult.innerHTML = "";
+    revealStatus.className = "status";
+    revealStatus.textContent = "";
+    parsedTrailer = findTrailer(bytes);
+    revealOpts.hidden = false;
+    if (!parsedTrailer) {
+      revealStatus.className = "status bad";
+      revealStatus.textContent = "這張圖裡沒有找到「圖中圖」藏的資料。它可能是普通圖片，或曾被平台重新壓縮而丟失尾端資料。";
+      revealBtn.disabled = true;
+      return Promise.resolve();
+    }
+    revealBtn.disabled = false;
+    if (parsedTrailer.flag & 1) {
+      revealStatus.textContent = "偵測到加密的藏入資料，請輸入密碼後取出。";
+    } else {
+      revealStatus.textContent = "偵測到藏入資料，按下方按鈕取出。";
+    }
+    return Promise.resolve();
+  }
+
+  revealBtn.addEventListener("click", async function () {
+    if (!parsedTrailer) return;
+    revealBtn.disabled = true;
+    revealStatus.className = "status";
+    revealStatus.textContent = "取出中…";
+    try {
+      var payload;
+      if (parsedTrailer.flag & 1) {
+        if (!pwReveal.value) {
+          throw new Error("這份資料有加密，請先輸入密碼。");
+        }
+        try {
+          payload = await decryptPayload(parsedTrailer.body, pwReveal.value);
+        } catch (e) {
+          throw new Error("解密失敗 — 密碼可能不對。");
+        }
+      } else {
+        payload = parsedTrailer.body;
+      }
+      var items = unpackImages(payload);
+      renderExtracted(items);
+      revealStatus.className = "status good";
+      revealStatus.textContent = "取出 " + items.length + " 張圖片。";
+    } catch (err) {
+      revealStatus.className = "status bad";
+      revealStatus.textContent = err && err.message ? err.message : String(err);
+    }
+    revealBtn.disabled = false;
+  });
+
+  function guessMime(name, bytes) {
+    var n = name.toLowerCase();
+    if (n.endsWith(".png")) return "image/png";
+    if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+    if (n.endsWith(".gif")) return "image/gif";
+    if (n.endsWith(".webp")) return "image/webp";
+    if (n.endsWith(".bmp")) return "image/bmp";
+    if (n.endsWith(".svg")) return "image/svg+xml";
+    // sniff
+    if (bytes[0] === 0x89 && bytes[1] === 0x50) return "image/png";
+    if (bytes[0] === 0xFF && bytes[1] === 0xD8) return "image/jpeg";
+    if (bytes[0] === 0x47 && bytes[1] === 0x49) return "image/gif";
+    return "application/octet-stream";
+  }
+
+  function renderExtracted(items) {
+    var grid = document.createElement("div");
+    grid.className = "extracted";
+    items.forEach(function (it) {
+      var mime = guessMime(it.name, it.bytes);
+      var blob = new Blob([it.bytes], { type: mime });
+      var url = URL.createObjectURL(blob);
+      var card = document.createElement("div");
+      card.className = "ex-card";
+      card.innerHTML =
+        '<img src="' + url + '" alt="' + escapeHtml(it.name) + '">' +
+        '<div class="foot"><div class="fn">' + escapeHtml(it.name) + "</div></div>";
+      var btn = document.createElement("button");
+      btn.className = "btn ghost";
+      btn.style.fontSize = "13px";
+      btn.style.padding = "7px 12px";
+      btn.textContent = "下載";
+      btn.addEventListener("click", async function () {
+        btn.disabled = true;
+        var r = await saveFile(blob, it.name);
+        btn.disabled = false;
+        if (r === "declined") { btn.textContent = "下載"; }
+        else if (r === "error") { btn.textContent = "存檔被擋"; }
+        else { btn.textContent = "已下載 ✓"; }
+      });
+      card.querySelector(".foot").appendChild(btn);
+      grid.appendChild(card);
+    });
+    revealResult.innerHTML = "";
+    revealResult.appendChild(grid);
+  }
+})();
+</script>
+</body></html>
